@@ -11,6 +11,8 @@ module Spree
         }
 
         attributes[:company] = company if respond_to?(:company)
+        attributes[:company] ||= company_name if respond_to?(:company_name)
+
         attributes[:name] = full_name if respond_to?(:full_name)
         attributes[:state] = state ? state.abbr : state_name
         attributes[:country] = country.try(:iso)
