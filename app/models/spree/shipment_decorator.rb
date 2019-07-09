@@ -2,6 +2,7 @@ module Spree
   module ShipmentDecorator
     def self.prepended(mod)
       mod.state_machine.before_transition(
+        from: :ready,
         to: :shipped,
         do: :buy_easypost_rate,
         if: -> { Spree::EasyPost::CONFIGS[:purchase_labels?] }
