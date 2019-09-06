@@ -1,4 +1,4 @@
-module SolidusEasypost
+module SolidusEasyPost
   class Estimator
     def shipping_rates(package, frontend_only = true)
       shipment = package.easypost_shipment
