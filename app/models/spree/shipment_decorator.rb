@@ -38,7 +38,7 @@ module Spree
     def rebuild_easypost_shipment
       new_ep_shipment = build_easypost_shipment
       new_ep_rates = new_ep_shipment.rates
-      return if new_ep_shipment.messages.present? || new_ep_rates.count < self.shipping_rates.count
+      return if new_ep_rates.count < self.shipping_rates.count
 
       matches = {}
 
