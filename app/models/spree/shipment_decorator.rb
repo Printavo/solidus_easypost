@@ -38,33 +38,40 @@ module Spree
     def rebuild_easypost_shipment
       new_ep_shipment = build_easypost_shipment
       new_ep_rates = new_ep_shipment.rates
-      return if new_ep_rates.count < self.shipping_rates.count
 
-      matches = {}
+      matching_rates = new_ep_rates.select do |sr|
+        ("#{sr.carrier} #{sr.service}" == selected_shipping_rate.name) &&
+          (sr.rate.to_f == selected_shipping_rate.cost) &&
+          (selected_shipping_rate.shipping_method.code.match(/#{sr.carrier_account_id}/))
+      end
 
-      new_ep_rates.each do |rate|
-        old_rate = self.shipping_rates.find_by(name: "#{rate.carrier} #{rate.service}")
-        for_selected_rate = "#{rate.carrier} #{rate.service}" == self.selected_shipping_rate.name
+      if matching_rates.present?
+        matching_rate = matching_rates.first
+        shipping_method_to_update = selected_shipping_rate.shipping_method
+        shipping_rates.where(shipping_method: shipping_method_to_update).each(&:destroy!)
 
-        if old_rate.blank?
-          return if for_selected_rate
-          next
+        new_ep_rates.select { |epr| shipping_method_to_update.code.match(/#{epr.carrier_account_id}/) }.each do |ep_rate|
+          shipping_rate_attrs = {
+            name: "#{ ep_rate.carrier } #{ ep_rate.service }",
+            cost: ep_rate.rate,
+            easy_post_shipment_id: ep_rate.shipment_id,
+            easy_post_rate_id: ep_rate.id,
+            shipping_method: shipping_method_to_update
+          }
+
+          new_rate = Spree::ShippingRate.create!(shipping_rate_attrs)
+
+          if ep_rate.id == matching_rate.id
+            new_rate.update(selected: true)
+          end
+
+          self.shipping_rates << new_rate
         end
 
-        difference_in_price = rate.rate.to_f - old_rate.cost.to_f
-        return if difference_in_price != 0.0 && for_selected_rate
-
-        matches[old_rate.easy_post_rate_id.to_s] = rate.id
+        new_ep_shipment
+      else
+        nil
       end
-
-      return if matches.keys.count != self.shipping_rates.count
-
-      matches.each do |old_rate_easypost_id, new_rate_easypost_id|
-        old_rate = self.shipping_rates.find_by(easy_post_rate_id: old_rate_easypost_id)
-        old_rate.update(easy_post_rate_id: new_rate_easypost_id, easy_post_shipment_id: new_ep_shipment.id)
-      end
-
-      new_ep_shipment
     end
 
     def buy_easypost_rate
@@ -76,20 +83,20 @@ module Spree
 
       begin
         easypost_shipment.buy(rate) unless easypost_shipment.postage_label.present?
-      rescue RuntimeError => exception
+      rescue StandardError => exception
         new_easypost_shipment = rebuild_easypost_shipment
         raise exception if new_easypost_shipment.blank?
 
-        new_rate = new_easypost_shipment.rates.find { |r| r.id == selected_shipping_rate.reload.easy_post_rate_id }
+        new_rate = new_easypost_shipment.rates.find { |r| r.id == self.reload.selected_shipping_rate.easy_post_rate_id }
         new_easypost_shipment.buy(new_rate)
         easypost_shipment = new_easypost_shipment
       end
 
       self.tracking = easypost_shipment.tracking_code
       self.easy_post_public_tracking_url = easypost_shipment.tracker.public_url
-      self.easy_post_postage_label_url = easypost_shipment.postage_label&.label_url
+      self.easy_post_postage_label_url = easypost_shipment&.postage_label&.label_url
     end
+
+    Spree::Shipment.prepend(self) unless Spree::Shipment.ancestors.include?(self)
   end
 end
-
-Spree::Shipment.prepend Spree::ShipmentDecorator
