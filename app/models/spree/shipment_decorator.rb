@@ -39,20 +39,27 @@ module Spree
       new_ep_shipment = build_easypost_shipment
       new_ep_rates = new_ep_shipment.rates
 
-      matching_rates = new_ep_rates.select do |sr|
-        ("#{sr.carrier} #{sr.service}" == selected_shipping_rate.name) &&
-          (sr.rate.to_f == selected_shipping_rate.cost) &&
-          (selected_shipping_rate.shipping_method.code.match(/#{sr.carrier_account_id}/))
+      matching_rates = new_ep_rates.select do |ep_shipping_rate|
+        next unless "#{ep_shipping_rate.carrier} #{ep_shipping_rate.service}" == selected_shipping_rate.name
+        next unless selected_shipping_rate.shipping_method.code.match(/#{ep_shipping_rate.carrier_account_id}/)
+
+        if selected_shipping_rate.is_flat_rate
+          ep_shipping_rate.rate.to_f == selected_shipping_rate.actual_cost
+        else
+          ep_shipping_rate.rate.to_f == selected_shipping_rate.cost
+        end
       end
 
       if matching_rates.present?
         matching_rate = matching_rates.first
+        previously_selected_shipping_rate = selected_shipping_rate
+
         shipping_method_to_update = selected_shipping_rate.shipping_method
         shipping_rates.where(shipping_method: shipping_method_to_update).each(&:destroy!)
 
         new_ep_rates.select { |epr| shipping_method_to_update.code.match(/#{epr.carrier_account_id}/) }.each do |ep_rate|
           shipping_rate_attrs = {
-            name: "#{ ep_rate.carrier } #{ ep_rate.service }",
+            name: "#{ep_rate.carrier} #{ep_rate.service}",
             cost: ep_rate.rate,
             easy_post_shipment_id: ep_rate.shipment_id,
             easy_post_rate_id: ep_rate.id,
@@ -62,7 +69,15 @@ module Spree
           new_rate = Spree::ShippingRate.create!(shipping_rate_attrs)
 
           if ep_rate.id == matching_rate.id
-            new_rate.update(selected: true)
+            new_rate.selected = true
+
+            if previously_selected_shipping_rate.is_flat_rate
+              new_rate.is_flat_rate = true
+              new_rate.actual_cost = new_rate.cost
+              new_rate.cost = previously_selected_shipping_rate.cost
+            end
+
+            new_rate.save
           end
 
           self.shipping_rates << new_rate
