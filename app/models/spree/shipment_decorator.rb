@@ -43,7 +43,7 @@ module Spree
         next unless "#{ep_shipping_rate.carrier} #{ep_shipping_rate.service}" == selected_shipping_rate.name
         next unless selected_shipping_rate.shipping_method.code.match(/#{ep_shipping_rate.carrier_account_id}/)
 
-        if selected_shipping_rate.is_flat_rate
+        if selected_shipping_rate.flat_rate
           ep_shipping_rate.rate.to_f == selected_shipping_rate.actual_cost
         else
           ep_shipping_rate.rate.to_f == selected_shipping_rate.cost
@@ -71,8 +71,8 @@ module Spree
           if ep_rate.id == matching_rate.id
             new_rate.selected = true
 
-            if previously_selected_shipping_rate.is_flat_rate
-              new_rate.is_flat_rate = true
+            if previously_selected_shipping_rate.flat_rate
+              new_rate.flat_rate = true
               new_rate.actual_cost = new_rate.cost
               new_rate.cost = previously_selected_shipping_rate.cost
             end
