@@ -11,13 +11,17 @@ module Spree
 
     def retrieve_or_build_easypost_shipment
       if selected_easy_post_shipment_id
-        @ep_shipment ||= ::EasyPost::Shipment.retrieve(selected_easy_post_shipment_id)
+        @ep_shipment ||= ::EasyPost::Shipment.retrieve(selected_easy_post_shipment_id, easypost_api_key)
       else
         @ep_shipment = build_easypost_shipment
       end
     end
 
     private
+
+    def easypost_api_key
+      order&.account&.easypost_api_key
+    end
 
     def selected_easy_post_rate_id
       selected_shipping_rate.easy_post_rate_id
@@ -29,9 +33,12 @@ module Spree
 
     def build_easypost_shipment
       ::EasyPost::Shipment.create(
-        to_address: order.ship_address.easypost_address,
-        from_address: stock_location.easypost_address,
-        parcel: to_package.easypost_parcel
+        {
+          to_address: order.ship_address.easypost_address(easypost_api_key),
+          from_address: stock_location.easypost_address(easypost_api_key),
+          parcel: to_package.easypost_parcel
+        },
+        easypost_api_key
       )
     end
 
