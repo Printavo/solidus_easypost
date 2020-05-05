@@ -15,10 +15,13 @@ module Spree
 
       def easypost_shipment
         @ep_shipment ||= ::EasyPost::Shipment.create(
-          from_address: stock_location.easypost_address,
-          to_address: order.ship_address.easypost_address,
-          parcel: build_parcel,
-          is_return: true
+          {
+            from_address: stock_location.easypost_address(easypost_api_key),
+            to_address: order.ship_address.easypost_address(easypost_api_key),
+            parcel: build_parcel,
+            is_return: true
+          },
+          easypost_api_key
         )
       end
 
@@ -29,9 +32,14 @@ module Spree
 
       private
 
+      def easypost_api_key
+        order&.account&.easypost_api_key
+      end
+
       def build_parcel
         total_weight = inventory_units.joins(:variant).sum(:weight)
-        ::EasyPost::Parcel.create weight: total_weight
+
+        ::EasyPost::Parcel.create({ weight: total_weight }, easypost_api_key)
       end
     end
   end
