@@ -119,6 +119,6 @@ module Spree
       self.easy_post_postage_label_url = easypost_shipment&.postage_label&.label_url
     end
 
-    Spree::Shipment.prepend(self) unless Spree::Shipment.ancestors.include?(self)
+    Spree::Shipment.prepend(self)
   end
 end
