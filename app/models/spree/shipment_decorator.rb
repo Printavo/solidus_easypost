@@ -19,12 +19,12 @@ module Spree
 
     def build_easypost_shipment
       ::EasyPost::Shipment.create(
-          {
-              to_address: order.ship_address.easypost_address(easypost_api_key),
-              from_address: stock_location.easypost_address(easypost_api_key),
-              parcel: to_package.easypost_parcel
-          },
-          easypost_api_key
+        {
+          to_address: order.ship_address.easypost_address(easypost_api_key),
+          from_address: stock_location.easypost_address(easypost_api_key),
+          parcel: to_package.easypost_parcel
+        },
+        easypost_api_key
       )
     end
 
@@ -50,11 +50,7 @@ module Spree
         next unless "#{ep_shipping_rate.carrier} #{ep_shipping_rate.service}" == selected_shipping_rate.name
         next unless selected_shipping_rate.shipping_method.code.match(/#{ep_shipping_rate.carrier_account_id}/)
 
-        if selected_shipping_rate.flat_rate?
-          ep_shipping_rate.rate.to_f <= selected_shipping_rate.actual_cost
-        else
-          ep_shipping_rate.rate.to_f <= selected_shipping_rate.cost
-        end
+        true
       end
 
       if matching_rates.present?
@@ -87,7 +83,7 @@ module Spree
             new_rate.save
           end
 
-          self.shipping_rates << new_rate
+          shipping_rates << new_rate
         end
 
         new_ep_shipment
@@ -99,17 +95,17 @@ module Spree
     def buy_easypost_rate
       easypost_shipment = retrieve_or_build_easypost_shipment
 
-      rate = easypost_shipment.rates.find do |rate|
-        rate.id == selected_easy_post_rate_id
+      rate = easypost_shipment.rates.find do |r|
+        r.id == selected_easy_post_rate_id
       end
 
       begin
         easypost_shipment.buy(rate) unless easypost_shipment.postage_label.present?
-      rescue StandardError => exception
+      rescue StandardError => e
         new_easypost_shipment = rebuild_easypost_shipment
-        raise exception if new_easypost_shipment.blank?
+        raise e if new_easypost_shipment.blank?
 
-        new_rate = new_easypost_shipment.rates.find { |r| r.id == self.reload.selected_shipping_rate.easy_post_rate_id }
+        new_rate = new_easypost_shipment.rates.find { |r| r.id == reload.selected_shipping_rate.easy_post_rate_id }
         new_easypost_shipment.buy(new_rate)
         easypost_shipment = new_easypost_shipment
       end
