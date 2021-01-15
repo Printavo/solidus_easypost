@@ -1,6 +1,10 @@
+require 'solidus_support'
+
 module Spree
   module EasyPost
     class Engine < Rails::Engine
+      include SolidusSupport::EngineExtensions
+
       require 'spree/core'
       isolate_namespace Spree
       engine_name 'spree_easypost'
@@ -9,18 +13,6 @@ module Spree
       config.generators do |g|
         g.test_framework :rspec
       end
-
-      def self.activate
-        Dir.glob(File.join(File.dirname(__FILE__), '../../app/**/*_decorator*.rb')) do |c|
-          require_dependency(c)
-        end
-
-        Dir.glob(File.join(File.dirname(__FILE__), '../../app/models/**/*.rb')) do |c|
-          require_dependency(c)
-        end
-      end
-
-      config.to_prepare &method(:activate).to_proc
     end
   end
 end
