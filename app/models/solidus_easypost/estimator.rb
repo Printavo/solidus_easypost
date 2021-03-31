@@ -3,7 +3,7 @@ module SolidusEasyPost
     def shipping_rates(package, frontend_only = true)
       shipment = package.easypost_shipment
       store = package.order.store
-      rates = shipment.rates.sort_by { |r| r.rate.to_i }
+      rates = Spree::EasyPost.allowed_rates(shipment.rates).sort_by { |r| r.rate.to_i }
 
       shipping_rates = []
 
