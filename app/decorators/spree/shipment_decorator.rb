@@ -43,7 +43,7 @@ module ShipmentDecorator
 
   def rebuild_easypost_shipment
     new_ep_shipment = build_easypost_shipment
-    new_ep_rates = new_ep_shipment.rates
+    new_ep_rates = Spree::EasyPost.allowed_rates(new_ep_shipment.rates)
 
     matching_rates = new_ep_rates.select do |ep_shipping_rate|
       next unless "#{ep_shipping_rate.carrier} #{ep_shipping_rate.service}" == selected_shipping_rate.name
