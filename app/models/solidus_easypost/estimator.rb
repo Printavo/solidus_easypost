@@ -55,11 +55,7 @@ module SolidusEasyPost
         r.shipping_categories = [Spree::ShippingCategory.first]
       end
 
-      begin
-        store.shipping_methods << sm
-      rescue ActiveRecord::RecordNotUnique => e
-        # do nothing, this is to prevent duplicates
-      end
+      store.shipping_methods << sm unless store.shipping_methods.include?(sm)
 
       sm
     end
