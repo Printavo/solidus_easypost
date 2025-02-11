@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.requirements << 'none'
 
-  s.add_dependency 'solidus', ['>= 1.1', '< 3.x']
+  s.add_dependency 'solidus', '>= 1.1'
   s.add_dependency 'solidus_support'
   s.add_dependency 'easypost'
 
