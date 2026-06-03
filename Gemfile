@@ -1,18 +1,15 @@
 source 'https://rubygems.org'
 
-branch = ENV.fetch('SOLIDUS_BRANCH', 'master')
-gem 'solidus', github: 'solidusio/solidus', branch: branch
-gem 'solidus_auth_devise'
+# Consume the Printavo Solidus fork (Solidus 2.11.16 + Rails 8 compat +
+# state_machines <0.10 pin); the branch boots on both Rails 7.2 and 8.0.
+gem 'solidus', git: 'https://github.com/Printavo/solidus.git', branch: 'rails-8.0-support'
+gem 'solidus_auth_devise', '~> 2.5'
 
-if branch == 'master' || branch >= "v2.3"
-  gem 'rails', '~> 5.1.0' # hack for broken bundler dependency resolution
-elsif branch >= "v2.0"
-  gem 'rails', '~> 5.0.0' # hack for broken bundler dependency resolution
-else
-  gem "rails", '~> 4.2.0' # hack for broken bundler dependency resolution
-end
+# Rails version is driven by the harness so both axes can be exercised from the
+# same checkout: RAILS_VERSION='~> 7.2.0' / '~> 8.0'.
+gem 'rails', ENV['RAILS_VERSION'], require: false
 
-gem 'pg'
-gem 'mysql2'
+# The dummy app runs on sqlite (DB=sqlite); pg/mysql2 were CI-only adapters and
+# their native builds need client libs absent from the dev/test sandbox.
 
 gemspec
