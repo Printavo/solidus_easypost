@@ -43,9 +43,18 @@ task :test_app do
   puts 'Setting up dummy database...'
   # rake test_app's chained db:create/db:migrate can leave the sqlite file empty;
   # run each step as a separate bin/rails invocation so a failure surfaces.
-  Dir.chdir('spec/dummy') do
-    sh 'bin/rails db:environment:set RAILS_ENV=test'
-    sh 'bin/rails db:drop db:create RAILS_ENV=test'
-    sh 'bin/rails db:migrate VERBOSE=false RAILS_ENV=test'
+  # The in-process generators leave the process inside spec/dummy and mangle
+  # bundler's env, so resolve the dummy app by absolute path and shell out with
+  # the original env and an explicit ruby interpreter for each db step.
+  dummy_root = File.expand_path('spec/dummy', __dir__)
+  Bundler.with_original_env do
+    Dir.chdir(dummy_root) do
+      sh "#{RbConfig.ruby} ./bin/rails db:environment:set RAILS_ENV=test"
+      sh "#{RbConfig.ruby} ./bin/rails db:drop db:create RAILS_ENV=test"
+      # db:migrate applies the engine's migrations in place (the engine appends
+      # its db/migrate path to the app), recording them under their original
+      # versions so maintain_test_schema! sees a clean schema.
+      sh "#{RbConfig.ruby} ./bin/rails db:migrate VERBOSE=false RAILS_ENV=test"
+    end
   end
 end

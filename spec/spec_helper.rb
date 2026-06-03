@@ -17,7 +17,11 @@ ENV['RAILS_ENV'] = 'test'
 require File.expand_path('../dummy/config/environment.rb',  __FILE__)
 
 # Recover from a dummy app whose schema wasn't fully loaded by rake test_app
-# (chained db:create/db:migrate can leave the sqlite file empty).
+# (chained db:create/db:migrate can leave the sqlite file empty). rspec runs
+# from the gem root, so point the migration check at the dummy app's (absolute)
+# db/migrate instead of the gem's own original migrations, which are unrecorded.
+ActiveRecord::Migrator.migrations_paths =
+  [File.expand_path('../dummy/db/migrate', __FILE__)]
 ActiveRecord::Migration.maintain_test_schema!
 
 require 'rspec/rails'
@@ -36,25 +40,30 @@ EasyPost.api_key = 'CvzYtuda6KRI9JjG7SAHbA'
 # in spec/support/ and its subdirectories.
 Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].each { |f| require f }
 
+# rspec runs from the gem root, where FactoryBot's default definition_file_paths
+# (factories, spec/factories, ...) make factory_bot_rails auto-load our
+# FactoryBot.modify overrides before Spree's core factories are registered. Load
+# factory_bot first and blank the paths so the factory_bot_rails require pulled
+# in by spree/testing_support/factory_bot doesn't auto-discover spec/factories.
+require 'factory_bot'
+FactoryBot.definition_file_paths = []
 require 'spree/testing_support/factory_bot'
 
-# When the dummy app is pre-booted via require 'environment', factory_bot_rails'
-# path-setup initializer has already run, so pin the dummy app's factory path
-# before loading so our spec_modification overrides resolve against Spree's
-# core factories.
-FactoryBot.definition_file_paths << File.expand_path('../dummy/spec/factories', __FILE__)
+# Now pin Spree's core factory paths first, then this extension's factories
+# (which use .modify and must resolve against the core definitions).
+FactoryBot.definition_file_paths =
+  Spree::TestingSupport::FactoryBot.definition_file_paths + [
+    File.expand_path('../../lib/spree_easypost/factories', __FILE__),
+    File.expand_path('factories/spree_modification', File.dirname(__FILE__))
+  ]
 
-# Load Spree core factories via the non-deprecated loader the in-tree
-# deprecation points to (replaces require 'spree/testing_support/factories').
+# Load via the non-deprecated loader the in-tree deprecation points to
+# (replaces require 'spree/testing_support/factories').
 Spree::TestingSupport::FactoryBot.add_paths_and_load!
 
 require 'spree/testing_support/controller_requests'
 require 'spree/testing_support/authorization_helpers'
 require 'spree/testing_support/url_helpers'
-
-# Requires factories defined in lib/spree_easypost/factories.rb
-require 'spree_easypost/factories'
-require 'factories/spree_modification'
 
 require 'helpers/shipping_method_helpers'
 
