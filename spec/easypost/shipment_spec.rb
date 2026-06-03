@@ -15,8 +15,8 @@ module Spree
         lastname: 'Scamander',
         address1: '200 19th St',
         city: 'Birmingham',
-        state: FactoryGirl.create(:state),
-        country: FactoryGirl.create(:country),
+        state: FactoryBot.create(:state),
+        country: FactoryBot.create(:country),
         zipcode: 35203,
         phone: '123456789'
        )

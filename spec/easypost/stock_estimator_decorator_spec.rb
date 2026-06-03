@@ -1,7 +1,10 @@
 require 'spec_helper'
 
 RSpec.describe Spree::Stock::Estimator, :vcr do
-  if SolidusSupport.solidus_gem_version < Gem::Version.new("1.3")
+  # SolidusSupport.solidus_gem_version passes a String callstack to the
+  # solidus_support 0.13 deprecator, which AS 8's Deprecation#warn rejects; use
+  # Spree.solidus_gem_version, the method solidus_support itself recommends.
+  if Spree.solidus_gem_version < Gem::Version.new("1.3")
     let(:estimator) { described_class.new(shipment.order) }
   else
     let(:estimator) { described_class.new }
