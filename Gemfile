@@ -9,7 +9,7 @@ gem 'solidus_auth_devise', '~> 2.5'
 # same checkout: RAILS_VERSION='~> 7.2.0' / '~> 8.0'.
 gem 'rails', ENV['RAILS_VERSION'], require: false
 
-gem 'pg'
-gem 'mysql2'
+# The dummy app runs on sqlite (DB=sqlite); pg/mysql2 were CI-only adapters and
+# their native builds need client libs absent from the dev/test sandbox.
 
 gemspec

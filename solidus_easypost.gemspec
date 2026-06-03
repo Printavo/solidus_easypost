@@ -30,6 +30,10 @@ Gem::Specification.new do |s|
   # factory_girl renamed to factory_bot; 4.x is the last line compatible with the
   # static deprecation path Solidus 2.11 testing-support relies on (resolves 4.11.1).
   s.add_development_dependency 'factory_bot_rails', '~> 4.8'
+  # Stdlib gems unbundled from Ruby 3.4; factory_bot 4.x requires observer.
+  s.add_development_dependency 'observer'
+  s.add_development_dependency 'mutex_m'
+  s.add_development_dependency 'benchmark'
   s.add_development_dependency 'ffaker'
   # rspec-rails 8 dropped fixture_path=; 7.1 keeps it for the spec_helper idiom.
   s.add_development_dependency 'rspec-rails', '~> 7.1'
